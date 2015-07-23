@@ -11,13 +11,13 @@ Usage
 
 ``wagoner`` generates random words from tables extracted from texts. You need first to extract such a table from a text. To extract a table, use ``wagoner.table``::
 
-    python3 -m wagoner.table TEXT --output text.table
+    python -m wagoner.table TEXT --output text.table
 
 This command will extract the table corresponding to ``TEXT`` into the file ``text.table``.
 
 Then, given the extracted table, ``wagoner.word`` can extract random words::
 
-    python3 -m wagoner.word text.table
+    python -m wagoner.word text.table
 
 This command will generate ten words of ten characters, based on the information in ``text.table``. To generate another number of words, use the ``--count`` option and to change their length, the ``--length`` option.
 
@@ -43,11 +43,11 @@ Let's take the list of English words available on http://www-01.sil.org/linguist
 
 First thing to do before generating random words is to extract the table::
 
-    python3 -m wagoner.table wordsEn.txt --output wordsEn.table
+    python -m wagoner.table wordsEn.txt --output wordsEn.table
 
 The table is extracted and saved in the ``wordsEn.table`` file. Then, we can generate random words::
 
-    python3 -m wagoner.word wordsEn.table
+    python -m wagoner.word wordsEn.table
 
 that outputs, for example::
 
@@ -64,7 +64,7 @@ that outputs, for example::
 
 You can see that some words are really like real words: ``crappinesa`` really looks like ``crappiness``, a word of ``wordsEn.txt``. To avoid generating such too real words, we can ask wagoner to only consider finite prefixes; this will avoid to be trapped in the increasing proability of ressembling the word ``crappiness`` as the word is generated::
 
-    python3 -m wagoner.word wordsEn.table --prefix=4
+    python -m wagoner.word wordsEn.table --prefix=4
 
 that outputs, for example::
 
