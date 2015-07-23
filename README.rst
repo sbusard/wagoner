@@ -34,3 +34,49 @@ This next character is chosen randomly among the possible next characters, but w
 Note that the ``--flatten`` option is also present with ``wagoner.table``; this forces ``wagoner.table`` to extract a table in which the number of occurrences of a character following a given prefix is forgotten, giving the same result as the ``--flatten`` option of ``wagoner.word`` at generation.
 
 Finally, when incrementally generating a random word, the full prefix is used to extract next character. In usual languages such as English, knowing the full prefix is not necessary to generate a pronounceable word; instead, three or four characters are usually sufficient to choose a next character that will sound correctly. Restricting the generation of words based on a bounded prefix instead of the full word can be achieved by using the ``--prefix`` option of ``wagoner.word``. Similarly, the same option can be used on ``wagoner.table`` to directly generate (smaller) tables that will not propose next characters for longer prefixes.
+
+
+Example
+-------
+
+Let's take the list of English words available on http://www-01.sil.org/linguistics/wordlists/english/. This list contains more than 100000 English words and should be useful to generate random words that sound English.
+
+First thing to do before generating random words is to extract the table::
+
+    python3 -m wagoner.table wordsEn.txt --output wordsEn.table
+
+The table is extracted and saved in the ``wordsEn.table`` file. Then, we can generate random words::
+
+    python3 -m wagoner.word wordsEn.table
+
+that outputs, for example::
+
+    joggeriest
+    lvinistica
+    cleiadicat
+    zenerousne
+    ulencering
+    mmanencien
+    zeratenesi
+    keynoteric
+    encientnes
+    crappinesa
+
+You can see that some words are really like real words: ``crappinesa`` really looks like ``crappiness``, a word of ``wordsEn.txt``. To avoid generating such too real words, we can ask wagoner to only consider finite prefixes; this will avoid to be trapped in the increasing proability of ressembling the word ``crappiness`` as the word is generated::
+
+    python3 -m wagoner.word wordsEn.table --prefix=4
+
+that outputs, for example::
+
+    rifiddlogi
+    tionterehi
+    zarintions
+    pivermancu
+    otintercen
+    queraffeab
+    hartniters
+    yzebutshar
+    utistrissi
+    intimenpec
+
+In this case, the words are still pronounceable, but are not words of the ``wordsEn.txt`` file.
