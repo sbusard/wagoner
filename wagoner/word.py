@@ -50,7 +50,8 @@ def random_word(table, length, prefix=0, flatten=False):
         weighted_choices = defaultdict(int)
         totalsum = 1
         for start in range(len(word) - 1,
-                           -1 if prefix <= 0 else len(word) - prefix + 1,
+                           -1 if prefix <= 0
+                              else max(-1, len(word) - prefix - 1),
                            -1):
             currentsum = 0
             subword = word[start:]

@@ -64,19 +64,19 @@ that outputs, for example::
 
 You can see that some words are really like real words: ``crappinesa`` really looks like ``crappiness``, a word of ``wordsEn.txt``. To avoid generating such too real words, we can ask wagoner to only consider finite prefixes; this will avoid to be trapped in the increasing proability of ressembling the word ``crappiness`` as the word is generated::
 
-    python -m wagoner.word wordsEn.table --prefix=4
+    python -m wagoner.word wordsEn.table --prefix=2
 
 that outputs, for example::
 
-    rifiddlogi
-    tionterehi
-    zarintions
-    pivermancu
-    otintercen
-    queraffeab
-    hartniters
-    yzebutshar
-    utistrissi
-    intimenpec
+    keyelittat
+    retimcenve
+    quedectrot
+    fodcalitur
+    xcedission
+    queffliqui
+    eshedlerad
+    ficklapett
+    quatersous
+    sulationur
 
 In this case, the words are still pronounceable, but are not words of the ``wordsEn.txt`` file.
