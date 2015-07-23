@@ -9,6 +9,7 @@ import pickle
 import random # TODO Use cryptographic-friendly randomization
 import itertools
 import bisect
+import operator
 from collections import defaultdict
 
 __all__ = ["random_word", "GenerationError"]
@@ -18,6 +19,19 @@ class GenerationError(Exception):
     A problem occurred during random word generation.
     """
     pass
+
+def accumulate(iterable, func=operator.add):
+    'Return running totals'
+    # Copied from
+    # https://docs.python.org/3/library/itertools.html#itertools.accumulate
+    # accumulate([1,2,3,4,5]) --> 1 3 6 10 15
+    # accumulate([1,2,3,4,5], operator.mul) --> 1 2 6 24 120
+    it = iter(iterable)
+    total = next(it)
+    yield total
+    for element in it:
+        total = func(total, element)
+        yield total
 
 def random_word(table, length, prefix=0, flatten=False):
     """
@@ -52,7 +66,7 @@ def random_word(table, length, prefix=0, flatten=False):
 
         # Extend with the weighted choice
         choices, weights = zip(*weighted_choices.items())
-        cumdist = list(itertools.accumulate(weights))
+        cumdist = list(accumulate(weights))
         x = random.random() * cumdist[-1]
         word +=choices[bisect.bisect(cumdist, x)]
     return word
