@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 """
 The word module generate, from a given table, a (set of) random words.
 """

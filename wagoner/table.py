@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 """
 The table module extract sub-word statistics from a given text and save it into
 a table. This table can then be used by the word module to generate random
