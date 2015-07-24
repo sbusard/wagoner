@@ -11,6 +11,7 @@ import re
 import sys
 import pickle
 from collections import defaultdict
+from utils import *
 
 __all__ = ["extract_table", "check_table"]
 
@@ -79,7 +80,7 @@ def process_arguments():
                                                  "given text(s)")
     parser.add_argument("text", type=argparse.FileType('r'), nargs="+",
                         help="the text to analyse")
-    parser.add_argument("--prefix", "-p", type=int, default=0,
+    parser.add_argument("--prefix", "-p", type=natural, default=0,
                         dest="prefix", help="if not 0, the maximum length of "
                                             "prefixes to consider when "
                                             "choosing the next character "

@@ -7,10 +7,9 @@ The word module generate, from a given table, a (set of) random words.
 import argparse
 import pickle
 import random # TODO Use cryptographic-friendly randomization
-import itertools
 import bisect
-import operator
 from collections import defaultdict
+from utils import *
 
 __all__ = ["random_word", "GenerationError"]
 
@@ -20,18 +19,37 @@ class GenerationError(Exception):
     """
     pass
 
-def accumulate(iterable, func=operator.add):
-    'Return running totals'
-    # Copied from
-    # https://docs.python.org/3/library/itertools.html#itertools.accumulate
-    # accumulate([1,2,3,4,5]) --> 1 3 6 10 15
-    # accumulate([1,2,3,4,5], operator.mul) --> 1 2 6 24 120
-    it = iter(iterable)
-    total = next(it)
-    yield total
-    for element in it:
-        total = func(total, element)
-        yield total
+def weighted_choices(word, table, flatten=False):
+    """
+    Return the weighted choices for word from table.
+
+    :param word: the word (as a string);
+    :param table: the table;
+    :param flatten: whether or not consider the table as flattened;
+    :return: the weighted choices for word from table.
+
+    The weighted choices are computed such that:
+    * for a given suffix of word, the possible choices are the ones defined by
+      table;
+    * the weights of these possible choices are either 1 if flatten is True,
+      or the weights defined by table otherwise;
+    * the weights are accumulated for each suffix, but longer suffixes have
+      scaled up weights to assure that all shorter suffixes will have less
+      probabilities to be picked.
+    """
+    weighted_choices = defaultdict(int)
+    totalsum = 1
+    for start in range(len(word) - 1, -1, -1):
+        currentsum = 0
+        subword = word[start:]
+        if subword in table:
+            for successor, weight in table[subword].items():
+                weight = 1 if flatten else weight
+                weight = weight * totalsum
+                weighted_choices[successor] += weight
+                currentsum += weight
+        totalsum += currentsum
+    return weighted_choices
 
 def random_word(table, length, prefix=0, flatten=False):
     """
@@ -43,30 +61,19 @@ def random_word(table, length, prefix=0, flatten=False):
                    consider to choose the next character;
     :param flatten: whether or not consider the table as flattened;
     :return: a random word of length generated from table.
+    :raises GenerationError: if the generated word cannot be extended to
+                             length.
     """
     word = random.choice(list(k for k in table if len(k) == 1))
     while len(word) < length:
         # Build the weighted list of possibilities
-        weighted_choices = defaultdict(int)
-        totalsum = 1
-        for start in range(len(word) - 1,
-                           -1 if prefix <= 0
-                              else max(-1, len(word) - prefix - 1),
-                           -1):
-            currentsum = 0
-            subword = word[start:]
-            if subword in table:
-                for successor, weight in table[subword].items():
-                    weight = 1 if flatten else weight
-                    weight = weight * totalsum
-                    weighted_choices[successor] += weight
-                    currentsum += weight
-            totalsum += currentsum
-        if not weighted_choices:
+        choices = weighted_choices(word[-prefix if prefix > 0 else 0:],
+                                   table, flatten=flatten)
+        if not choices:
             raise GenerationError(word + " cannot be extended")
 
         # Extend with the weighted choice
-        choices, weights = zip(*weighted_choices.items())
+        choices, weights = zip(*choices.items())
         cumdist = list(accumulate(weights))
         x = random.random() * cumdist[-1]
         word +=choices[bisect.bisect(cumdist, x)]
@@ -85,15 +92,15 @@ def process_arguments():
                                                  "the given table")
     parser.add_argument("table", type=argparse.FileType('rb'),
                         help="the table")
-    parser.add_argument("--length", "-l", type=int, default=10,
+    parser.add_argument("--length", "-l", type=nonzero_natural, default=10,
                         dest="length", help="the length of generated words "
                                             "(default: 10)")
-    parser.add_argument("--prefix", "-p", type=int, default=0,
+    parser.add_argument("--prefix", "-p", type=natural, default=0,
                         dest="prefix", help="if not 0, the maximum length of "
                                             "prefixes to consider when "
                                             "choosing the next character "
                                             "(default: 0)")
-    parser.add_argument("--count", "-c", type=int, default=10,
+    parser.add_argument("--count", "-c", type=natural, default=10,
                         dest="count", help="the number of words to generate "
                                            "(default: 10)")
     parser.add_argument("--flatten", "-f", action="store_true", default=False,
