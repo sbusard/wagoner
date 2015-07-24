@@ -121,6 +121,7 @@ def extend_word(table, word, length, prefix=0,end=False, flatten=False):
                                    end=end, flatten=flatten)
                 return word
             except GenerationError:
+                # FIXME Simply removing the wrong choice make weights wrong
                 del choices[element]
                 del weights[element]
                 word = word[:-1]
