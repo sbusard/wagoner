@@ -64,30 +64,66 @@ def random_word(table, length, prefix=0, start=False, end=False,
     :param end: if True, the generated word ends as a word of table;
     :param flatten: whether or not consider the table as flattened;
     :return: a random word of length generated from table.
-    :raises GenerationError: if the generated word cannot be extended to
-                             length.
+    :raises GenerationError: if no word of length can be generated.
     """
     if start:
         word = ">"
         length += 1
+        return extend_word(table, word, length, prefix=prefix, end=end,
+                           flatten=flatten)[1:]
     else:
-        word = random.choice(list(k for k in table if len(k) == 1))
-    while len(word) < length:
+        first_letters = list(k for k in table if len(k) == 1)
+        while True:
+            word = random.choice(first_letters)
+            try:
+                word = extend_word(table, word, length, prefix=prefix,
+                                   end=end, flatten=flatten)
+                return word
+            except GenerationError:
+                first_letters.remove(word[0])
+
+def extend_word(table, word, length, prefix=0,end=False, flatten=False):
+    """
+    Extend the given word with a random suffix up to length, from table.
+
+    :param table: the table from which generate a random word;
+    :param length: the length of the extended word; >= len(word);
+    :param prefix: if greater than 0, the maximum length of the prefix to
+                   consider to choose the next character;
+    :param end: if True, the generated word ends as a word of table;
+    :param flatten: whether or not consider the table as flattened;
+    :return: a random word of length generated from table, extending word.
+    :raises GenerationError: if the generated word cannot be extended to
+                             length.
+    """
+    if len(word) == length:
+        if end and "<" not in table[word[-1]]:
+            raise GenerationError(word + " cannot be extended")
+        else:
+            return word
+    else:  # len(word) < length
         # Build the weighted list of possibilities
         choices = weighted_choices(word[-prefix if prefix > 0 else 0:],
                                    table, flatten=flatten)
-        if not choices:
-            raise GenerationError(word + " cannot be extended")
-
-        # Extend with the weighted choice
         choices, weights = zip(*choices.items())
-        cumdist = list(accumulate(weights))
-        x = random.random() * cumdist[-1]
-        word +=choices[bisect.bisect(cumdist, x)]
-
-    if start:
-        word = word[1:]
-    return word
+        choices, weights = list(choices), list(weights)
+        while True:
+            if not choices:
+                print(word, "cannot be extended")
+                raise GenerationError(word + " cannot be extended")
+            # Extend with the weighted choice
+            cumdist = list(accumulate(weights))
+            x = random.random() * cumdist[-1]
+            element = bisect.bisect(cumdist, x)
+            word += choices[element]
+            try:
+                word = extend_word(table, word, length, prefix=prefix,
+                                   end=end, flatten=flatten)
+                return word
+            except GenerationError:
+                del choices[element]
+                del weights[element]
+                word = word[:-1]
 
 def process_arguments():
     """
@@ -96,6 +132,8 @@ def process_arguments():
      * -l (or --length) for the length of generated words (default: 10);
      * -p (or --prefix) for the maximum of prefixes to consider (default: 0);
      * -c (or --count) for the number of words to generate (default: 10);
+     * -s (or --start) for generating only words starting in table;
+     * -e (or --end) for generating only words ending in table;
      * -f (or --flatten) if the table must be flattened before generation.
     """
     parser = argparse.ArgumentParser(description="Generate random words from "
