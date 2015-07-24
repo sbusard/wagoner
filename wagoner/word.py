@@ -9,7 +9,7 @@ import pickle
 import random # TODO Use cryptographic-friendly randomization
 import bisect
 from collections import defaultdict
-from utils import *
+from .utils import *
 
 __all__ = ["random_word", "GenerationError"]
 
@@ -51,7 +51,8 @@ def weighted_choices(word, table, flatten=False):
         totalsum += currentsum
     return weighted_choices
 
-def random_word(table, length, prefix=0, flatten=False):
+def random_word(table, length, prefix=0, start=False, end=False,
+                flatten=False):
     """
     Generate a random word of length from table.
 
@@ -59,12 +60,18 @@ def random_word(table, length, prefix=0, flatten=False):
     :param length: the length of the generated word; >= 1;
     :param prefix: if greater than 0, the maximum length of the prefix to
                    consider to choose the next character;
+    :param start: if True, the generated word starts as a word of table;
+    :param end: if True, the generated word ends as a word of table;
     :param flatten: whether or not consider the table as flattened;
     :return: a random word of length generated from table.
     :raises GenerationError: if the generated word cannot be extended to
                              length.
     """
-    word = random.choice(list(k for k in table if len(k) == 1))
+    if start:
+        word = ">"
+        length += 1
+    else:
+        word = random.choice(list(k for k in table if len(k) == 1))
     while len(word) < length:
         # Build the weighted list of possibilities
         choices = weighted_choices(word[-prefix if prefix > 0 else 0:],
@@ -77,6 +84,9 @@ def random_word(table, length, prefix=0, flatten=False):
         cumdist = list(accumulate(weights))
         x = random.random() * cumdist[-1]
         word +=choices[bisect.bisect(cumdist, x)]
+
+    if start:
+        word = word[1:]
     return word
 
 def process_arguments():
@@ -103,6 +113,10 @@ def process_arguments():
     parser.add_argument("--count", "-c", type=natural, default=10,
                         dest="count", help="the number of words to generate "
                                            "(default: 10)")
+    parser.add_argument("--start", "-s", action="store_true", default=False,
+                        dest="start", help="only starting words")
+    parser.add_argument("--end", "-e", action="store_true", default=False,
+                        dest="end", help="only ending words")
     parser.add_argument("--flatten", "-f", action="store_true", default=False,
                         dest="flatten", help="flatten the table")
     return parser.parse_args()
@@ -112,4 +126,5 @@ if __name__ == "__main__":
     table = pickle.load(args.table)
     for _ in range(args.count):
         print(random_word(table, args.length, prefix=args.prefix,
+                          start=args.start, end=args.end,
                           flatten=args.flatten))

@@ -8,10 +8,9 @@ words.
 
 import argparse
 import re
-import sys
 import pickle
 from collections import defaultdict
-from utils import *
+from .utils import *
 
 __all__ = ["extract_table", "check_table"]
 
@@ -34,6 +33,7 @@ def extract_table(words, prefix=0, flatten=False):
     """
     table = defaultdict(lambda: defaultdict(int))
     for word in words:
+        word = ">" + word + "<"
         for start in range(len(word) - 1):
             maxend = len(word) - 1 if prefix <= 0 else start + prefix + 1
             for end in range(start + 1, maxend):
