@@ -19,12 +19,14 @@ class GenerationError(Exception):
     """
     pass
 
-def weighted_choices(word, table, flatten=False):
+def weighted_choices(word, table, exclude=None, flatten=False):
     """
     Return the weighted choices for word from table.
 
     :param word: the word (as a string);
     :param table: the table;
+    :param exclude: if not None, a set of characters to exclude from the
+                    weighted choices;
     :param flatten: whether or not consider the table as flattened;
     :return: the weighted choices for word from table.
 
@@ -37,6 +39,7 @@ def weighted_choices(word, table, flatten=False):
       scaled up weights to assure that all shorter suffixes will have less
       probabilities to be picked.
     """
+    exclude = exclude if exclude is not None else set()
     weighted_choices = defaultdict(int)
     totalsum = 1
     for start in range(len(word) - 1, -1, -1):
@@ -44,10 +47,11 @@ def weighted_choices(word, table, flatten=False):
         subword = word[start:]
         if subword in table:
             for successor, weight in table[subword].items():
-                weight = 1 if flatten else weight
-                weight = weight * totalsum
-                weighted_choices[successor] += weight
-                currentsum += weight
+                if successor not in exclude:
+                    weight = 1 if flatten else weight
+                    weight = weight * totalsum
+                    weighted_choices[successor] += weight
+                    currentsum += weight
         totalsum += currentsum
     return weighted_choices
 
@@ -102,29 +106,35 @@ def extend_word(table, word, length, prefix=0,end=False, flatten=False):
         else:
             return word
     else:  # len(word) < length
-        # Build the weighted list of possibilities
-        choices = weighted_choices(word[-prefix if prefix > 0 else 0:],
-                                   table, flatten=flatten)
-        choices, weights = zip(*choices.items())
-        choices, weights = list(choices), list(weights)
+        exclude = set()
         while True:
+            choices = weighted_choices(word[-prefix if prefix > 0 else 0:],
+                                       table, exclude=exclude, flatten=flatten)
             if not choices:
-                print(word, "cannot be extended")
                 raise GenerationError(word + " cannot be extended")
             # Extend with the weighted choice
-            cumdist = list(accumulate(weights))
-            x = random.random() * cumdist[-1]
-            element = bisect.bisect(cumdist, x)
-            word += choices[element]
+            character = random_weighted_choice(choices)
+            word += character
             try:
                 word = extend_word(table, word, length, prefix=prefix,
                                    end=end, flatten=flatten)
                 return word
             except GenerationError:
-                # FIXME Simply removing the wrong choice make weights wrong
-                del choices[element]
-                del weights[element]
+                exclude.add(character)
                 word = word[:-1]
+
+def random_weighted_choice(choices):
+    """
+    Return a random key of choices, weighted by their value.
+
+    :param choices: a dictionary of keys and positive integer pairs;
+    :return: a random key of choices.
+    """
+    choices, weights = zip(*choices.items())
+    cumdist = list(accumulate(weights))
+    x = random.random() * cumdist[-1]
+    element = bisect.bisect(cumdist, x)
+    return choices[element]
 
 def process_arguments():
     """
