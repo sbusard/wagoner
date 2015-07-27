@@ -7,9 +7,9 @@ The word module generate, from a given table, a (set of) random words.
 import argparse
 import pickle
 import random # TODO Use cryptographic-friendly randomization
-import bisect
 from collections import defaultdict
-from .utils import *
+
+from wagoner.utils import *
 
 __all__ = ["random_word", "GenerationError"]
 
@@ -123,18 +123,6 @@ def extend_word(table, word, length, prefix=0,end=False, flatten=False):
                 exclude.add(character)
                 word = word[:-1]
 
-def random_weighted_choice(choices):
-    """
-    Return a random key of choices, weighted by their value.
-
-    :param choices: a dictionary of keys and positive integer pairs;
-    :return: a random key of choices.
-    """
-    choices, weights = zip(*choices.items())
-    cumdist = list(accumulate(weights))
-    x = random.random() * cumdist[-1]
-    element = bisect.bisect(cumdist, x)
-    return choices[element]
 
 def process_arguments():
     """

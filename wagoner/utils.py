@@ -2,9 +2,12 @@
 A set of utility functions.
 """
 
+import bisect
 import operator
+import random
 
-__all__ = ["accumulate", "natural", "nonzero_natural"]
+__all__ = ["accumulate", "natural", "nonzero_natural",
+           "random_weighted_choice"]
 
 def accumulate(iterable, func=operator.add):
     'Return running totals'
@@ -44,3 +47,17 @@ def nonzero_natural(value):
     if integer <= 0:
         raise ValueError("'%s' is not a strict positive integer" % value)
     return integer
+
+
+def random_weighted_choice(choices):
+    """
+    Return a random key of choices, weighted by their value.
+
+    :param choices: a dictionary of keys and positive integer pairs;
+    :return: a random key of choices.
+    """
+    choices, weights = zip(*choices.items())
+    cumdist = list(accumulate(weights))
+    x = random.random() * cumdist[-1]
+    element = bisect.bisect(cumdist, x)
+    return choices[element]

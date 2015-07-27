@@ -10,7 +10,7 @@ import argparse
 import re
 import pickle
 from collections import defaultdict
-from .utils import *
+from wagoner.utils import *
 
 __all__ = ["extract_table", "check_table"]
 
@@ -36,7 +36,7 @@ def extract_table(words, prefix=0, flatten=False):
         word = ">" + word + "<"
         for start in range(len(word) - 1):
             maxend = len(word) - 1 if prefix <= 0 else start + prefix + 1
-            for end in range(start + 1, maxend):
+            for end in range(start + 1, maxend + 1):
                 subword = word[start:end]
                 table[subword][word[end]] = (1 if flatten else
                                              table[subword][word[end]] + 1)
