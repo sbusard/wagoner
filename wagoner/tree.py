@@ -4,8 +4,10 @@
 The tree module extract, from a table, a tree limited to a given depth.
 """
 
+import argparse
+import pickle
 from collections import defaultdict
-from wagoner.utils import random_weighted_choice
+from wagoner.utils import random_weighted_choice, nonzero_natural, natural
 
 from wagoner.word import weighted_choices
 
@@ -88,3 +90,40 @@ def random_word(tree):
         current = choice
         word += current[0][-1]
     return word[:-1]
+
+
+def process_arguments():
+    """
+    Process the command line arguments. The arguments are:
+     * the table to generate random from;
+     * -l (or --length) for the length of generated words (default: 10);
+     * -p (or --prefix) for the maximum of prefixes to consider (default: 0);
+     * -c (or --count) for the number of words to generate (default: 10);
+     * -f (or --flatten) if the table must be flattened before generation.
+    """
+    parser = argparse.ArgumentParser(description="Generate random words from "
+                                                 "the given table")
+    parser.add_argument("table", type=argparse.FileType('rb'),
+                        help="the table")
+    parser.add_argument("--length", "-l", type=nonzero_natural, default=10,
+                        dest="length", help="the length of generated words "
+                                            "(default: 10)")
+    parser.add_argument("--prefix", "-p", type=natural, default=0,
+                        dest="prefix", help="if not 0, the maximum length of "
+                                            "prefixes to consider when "
+                                            "choosing the next character "
+                                            "(default: 0)")
+    parser.add_argument("--count", "-c", type=natural, default=10,
+                        dest="count", help="the number of words to generate "
+                                           "(default: 10)")
+    parser.add_argument("--flatten", "-f", action="store_true", default=False,
+                        dest="flatten", help="flatten the table")
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    args = process_arguments()
+    table = pickle.load(args.table)
+    tree = extract_tree(table, args.length, prefix=args.prefix,
+                        flatten=args.flatten)
+    for _ in range(args.count):
+        print(random_word(tree))
