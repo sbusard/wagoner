@@ -106,7 +106,7 @@ def extend_word(table, word, length, prefix=0,end=False, flatten=False):
         else:
             return word
     else:  # len(word) < length
-        exclude = set()
+        exclude = {"<"}
         while True:
             choices = weighted_choices(word[-prefix if prefix > 0 else 0:],
                                        table, exclude=exclude, flatten=flatten)
