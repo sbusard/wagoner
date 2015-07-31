@@ -10,6 +10,7 @@ import random # TODO Use cryptographic-friendly randomization
 from collections import defaultdict
 
 from wagoner.utils import *
+from wagoner.table import table
 
 __all__ = ["random_word", "GenerationError"]
 
@@ -160,8 +161,8 @@ def process_arguments():
 
 if __name__ == "__main__":
     args = process_arguments()
-    table = pickle.load(args.table)
+    t = pickle.load(args.table)
     for _ in range(args.count):
-        print(random_word(table, args.length, prefix=args.prefix,
+        print(random_word(t, args.length, prefix=args.prefix,
                           start=args.start, end=args.end,
                           flatten=args.flatten))

@@ -9,54 +9,79 @@ words.
 import argparse
 import re
 import pickle
-from collections import defaultdict
+from collections import defaultdict, Mapping
 from wagoner.utils import *
 
 __all__ = ["extract_table", "check_table"]
 
-def extract_table(words, prefix=0, flatten=False):
+class table(Mapping):
     """
-    Given an iterable of words, return the corresponding table.
-    The table is built by accumulating, for each word, for each sub-word,
-    the number of occurrences of the corresponding next character.
-
-    :param words: an iterable of strings made of alphabetic characters;
-    :param prefix: if greater than 0, the maximum length of the prefix to
-                   store in the table;
-    :param flatten: whether to flatten the table or not;
-    :return: the corresponding table.
-
-    Example:
-    >>> extract_table(['abaq'])
-    {'a':{'b': 1, 'q': 1}, 'ab': {'a': 1}, 'aba': {'q': 1}, 'b': {'a': 1},
-     'ba': {'q': 1}}
+    A table is a mapping of strings to mapping of their successing characters,
+    with the weight of the corresponding character. That is, given t a table,
+    t[s][c] gives the weight of c following s. Note that only non-zero weights
+    are present.
     """
-    table = defaultdict(lambda: defaultdict(int))
-    for word in words:
-        word = ">" + word + "<"
-        for start in range(len(word) - 1):
-            maxend = len(word) - 1 if prefix <= 0 else start + prefix + 1
-            for end in range(start + 1, maxend + 1):
-                subword = word[start:end]
-                table[subword][word[end]] = (1 if flatten else
-                                             table[subword][word[end]] + 1)
-    for k,v in table.items():
-        table[k] = dict(v)
-    return dict(table)
 
-def check_table(table):
-    """
-    Check that the given table is complete, that is, that every character of
-    the table can be followed by a new character.
+    def __init__(self, table):
+        """
+        Create a new table from table content.
 
-    :param table: the table;
-    :return: True if the table is complete, False otherwise.
-    """
-    for character, followers in table.items():
-        for follower in followers:
-            if follower not in table:
-                return False
-    return True
+        :param table: the content of the new table.
+        """
+        self.__content = table
+
+    @classmethod
+    def from_words(cls, words, prefix=0, flatten=False):
+        """
+        Given an iterable of words, return the corresponding table.
+        The table is built by accumulating, for each word, for each sub-word,
+        the number of occurrences of the corresponding next character.
+        
+        :param words: an iterable of strings made of alphabetic characters;
+        :param prefix: if greater than 0, the maximum length of the prefix to
+                       store in the table;
+        :param flatten: whether to flatten the table or not;
+        :return: the corresponding table.
+        
+        Example:
+        >>> extract_table(['abaq'])
+        {'a':{'b': 1, 'q': 1}, 'ab': {'a': 1}, 'aba': {'q': 1}, 'b': {'a': 1},
+         'ba': {'q': 1}}
+        """
+        table = defaultdict(lambda: defaultdict(int))
+        for word in words:
+            word = ">" + word + "<"
+            for start in range(len(word) - 1):
+                maxend = len(word) - 1 if prefix <= 0 else start + prefix + 1
+                for end in range(start + 1, maxend + 1):
+                    subword = word[start:end]
+                    table[subword][word[end]] = (1 if flatten else
+                                                 table[subword][word[end]] + 1)
+        for k,v in table.items():
+            table[k] = dict(v)
+        return cls(dict(table))
+
+    def __getitem__(self, key):
+        return self.__content[key]
+
+    def __iter__(self):
+        return iter(self.__content)
+
+    def __len__(self):
+        return len(self.__content)
+
+    def check(self):
+        """
+        Check that this table is complete, that is, every character of this
+        table can be followed by a new character.
+
+        :return: True if the table is complete, False otherwise.
+        """
+        for character, followers in self.items():
+            for follower in followers:
+                if follower not in self:
+                    return False
+        return True
 
 def extract_words(lines):
     """
@@ -103,12 +128,11 @@ if __name__ == "__main__":
             for word in extract_words(file):
                 yield word
 
-    table = extract_table(all_words(), prefix=args.prefix,
-                          flatten=args.flatten)
-    if args.check and not check_table(table):
+    t = table.from_words(all_words(), prefix=args.prefix, flatten=args.flatten)
+    if args.check and not t.check():
         print("[ERROR] The given set of texts yields an incomplete table.")
     else:
         if args.output:
-            pickle.dump(table, args.output)
+            pickle.dump(t, args.output)
         else:
-            print(table)
+            print(t)
