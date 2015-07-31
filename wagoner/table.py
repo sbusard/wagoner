@@ -7,12 +7,12 @@ words.
 """
 
 import argparse
-import re
 import pickle
 from collections import defaultdict, Mapping
+import random # TODO Use cryptographic-friendly randomization
 from wagoner.utils import *
 
-__all__ = ["extract_table", "check_table"]
+__all__ = ["table"]
 
 class table(Mapping):
     """
@@ -48,18 +48,18 @@ class table(Mapping):
         {'a':{'b': 1, 'q': 1}, 'ab': {'a': 1}, 'aba': {'q': 1}, 'b': {'a': 1},
          'ba': {'q': 1}}
         """
-        table = defaultdict(lambda: defaultdict(int))
+        t = defaultdict(lambda: defaultdict(int))
         for word in words:
             word = ">" + word + "<"
             for start in range(len(word) - 1):
                 maxend = len(word) - 1 if prefix <= 0 else start + prefix + 1
                 for end in range(start + 1, maxend + 1):
                     subword = word[start:end]
-                    table[subword][word[end]] = (1 if flatten else
-                                                 table[subword][word[end]] + 1)
-        for k,v in table.items():
-            table[k] = dict(v)
-        return cls(dict(table))
+                    t[subword][word[end]] = (1 if flatten else
+                                             t[subword][word[end]] + 1)
+        for k,v in t.items():
+            t[k] = dict(v)
+        return cls(dict(t))
 
     def __getitem__(self, key):
         return self.__content[key]
@@ -83,16 +83,109 @@ class table(Mapping):
                     return False
         return True
 
-def extract_words(lines):
-    """
-    Extract from the given iterable of lines the list of words.
+    def weighted_choices(self, word, exclude=None, flatten=False):
+        """
+        Return the weighted choices for word from this table.
+        
+        :param word: the word (as a string);
+        :param exclude: if not None, a set of characters to exclude from the
+                        weighted choices;
+        :param flatten: whether or not consider this table as flattened;
+        :return: the weighted choices for word from this table.
+        
+        The weighted choices are computed such that:
+        * for a given suffix of word, the possible choices are the ones defined
+          by table;
+        * the weights of these possible choices are either 1 if flatten is
+          True, or the weights defined by table otherwise;
+        * the weights are accumulated for each suffix, but longer suffixes have
+          scaled up weights to assure that all shorter suffixes will have less
+          probabilities to be picked.
+        """
+        exclude = exclude if exclude is not None else set()
+        weighted_choices = defaultdict(int)
+        totalsum = 1
+        for start in range(len(word) - 1, -1, -1):
+            currentsum = 0
+            subword = word[start:]
+            if subword in self:
+                for successor, weight in self[subword].items():
+                    if successor not in exclude:
+                        weight = 1 if flatten else weight
+                        weight = weight * totalsum
+                        weighted_choices[successor] += weight
+                        currentsum += weight
+            totalsum += currentsum
+        return weighted_choices
 
-    :param lines: an iterable of lines;
-    :return: a generator of words of lines.
-    """
-    for line in lines:
-       for word in re.findall(r"\w+", line):
-           yield word
+    def random_word(self, length, prefix=0, start=False, end=False,
+                    flatten=False):
+        """
+        Generate a random word of length from this table.
+
+        :param length: the length of the generated word; >= 1;
+        :param prefix: if greater than 0, the maximum length of the prefix to
+                       consider to choose the next character;
+        :param start: if True, the generated word starts as a word of table;
+        :param end: if True, the generated word ends as a word of table;
+        :param flatten: whether or not consider the table as flattened;
+        :return: a random word of length generated from table.
+        :raises GenerationError: if no word of length can be generated.
+        """
+        if start:
+            word = ">"
+            length += 1
+            return self._extend_word(word, length, prefix=prefix, end=end,
+                                     flatten=flatten)[1:]
+        else:
+            first_letters = list(k for k in self if len(k) == 1)
+            while True:
+                word = random.choice(first_letters)
+                try:
+                    word = self._extend_word(word, length, prefix=prefix,
+                                             end=end, flatten=flatten)
+                    return word
+                except GenerationError:
+                    first_letters.remove(word[0])
+
+    def _extend_word(self, word, length, prefix=0,end=False, flatten=False):
+        """
+        Extend the given word with a random suffix up to length.
+
+        :param length: the length of the extended word; >= len(word);
+        :param prefix: if greater than 0, the maximum length of the prefix to
+                       consider to choose the next character;
+        :param end: if True, the generated word ends as a word of table;
+        :param flatten: whether or not consider the table as flattened;
+        :return: a random word of length generated from table, extending word.
+        :raises GenerationError: if the generated word cannot be extended to
+                                 length.
+        """
+        if len(word) == length:
+            if end and "<" not in self[word[-1]]:
+                raise GenerationError(word + " cannot be extended")
+            else:
+                return word
+        else:  # len(word) < length
+            exclude = {"<"}
+            while True:
+                choices = self.weighted_choices(word[-prefix
+                                                     if prefix > 0
+                                                     else 0:],
+                                                exclude=exclude,
+                                                flatten=flatten)
+                if not choices:
+                    raise GenerationError(word + " cannot be extended")
+                # Extend with the weighted choice
+                character = random_weighted_choice(choices)
+                word += character
+                try:
+                    word = self._extend_word(word, length, prefix=prefix,
+                                             end=end, flatten=flatten)
+                    return word
+                except GenerationError:
+                    exclude.add(character)
+                    word = word[:-1]
 
 def process_arguments():
     """

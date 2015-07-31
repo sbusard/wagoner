@@ -8,9 +8,10 @@ import argparse
 import pickle
 from collections import defaultdict, Mapping
 from wagoner.utils import random_weighted_choice, nonzero_natural, natural
-
 from wagoner.word import weighted_choices
 from wagoner.table import table
+
+__all__ = ["tree"]
 
 class tree(Mapping):
     """
@@ -102,22 +103,21 @@ class tree(Mapping):
     def __len__(self):
         return len(self.__content)
 
+    def random_word(self):
+        """
+        Return a random word from this tree. The length of the word depends on
+        the this tree.
 
-def random_word(tree):
-    """
-    Return a random word from tree. The length of the word depends on the tree.
-
-    :param tree: the tree to generate a word from;
-    :return: a random word from tree.
-    """
-    word = ""
-    current = (">", 0)
-    while current[0] != "<":
-        choices = tree[current]
-        choice = random_weighted_choice(choices)
-        current = choice
-        word += current[0][-1]
-    return word[:-1]
+        :return: a random word from this tree.
+        """
+        word = ""
+        current = (">", 0)
+        while current[0] != "<":
+            choices = self[current]
+            choice = random_weighted_choice(choices)
+            current = choice
+            word += current[0][-1]
+        return word[:-1]
 
 
 def process_arguments():
@@ -129,23 +129,24 @@ def process_arguments():
      * -c (or --count) for the number of words to generate (default: 10);
      * -f (or --flatten) if the table must be flattened before generation.
     """
-    parser = argparse.ArgumentParser(description="Generate random words from "
+    parser = argparse.ArgumentParser(description="Generate trees from "
                                                  "the given table")
     parser.add_argument("table", type=argparse.FileType('rb'),
                         help="the table")
     parser.add_argument("--length", "-l", type=nonzero_natural, default=10,
-                        dest="length", help="the length of generated words "
-                                            "(default: 10)")
+                        dest="length", help="the length of words generable by "
+                                            "the tree (default: 10)")
     parser.add_argument("--prefix", "-p", type=natural, default=0,
                         dest="prefix", help="if not 0, the maximum length of "
                                             "prefixes to consider when "
                                             "choosing the next character "
                                             "(default: 0)")
-    parser.add_argument("--count", "-c", type=natural, default=10,
-                        dest="count", help="the number of words to generate "
-                                           "(default: 10)")
     parser.add_argument("--flatten", "-f", action="store_true", default=False,
                         dest="flatten", help="flatten the table")
+    parser.add_argument("--output", "-o", type=argparse.FileType('wb'),
+                        default=None, dest="output",
+                        help="the output destination; "
+                             "if missing, print the table")
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -153,5 +154,7 @@ if __name__ == "__main__":
     ta = pickle.load(args.table)
     te = tree.from_table(ta, args.length, prefix=args.prefix,
                          flatten=args.flatten)
-    for _ in range(args.count):
-        print(random_word(te))
+    if args.output:
+        pickle.dump(te, args.output)
+    else:
+        print(te)

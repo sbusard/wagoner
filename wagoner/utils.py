@@ -4,10 +4,11 @@ A set of utility functions.
 
 import bisect
 import operator
-import random
+import random # TODO Use cryptographic-friendly randomization
+import re
 
 __all__ = ["accumulate", "natural", "nonzero_natural",
-           "random_weighted_choice"]
+           "random_weighted_choice", "extract_words", "GenerationError"]
 
 def accumulate(iterable, func=operator.add):
     'Return running totals'
@@ -61,3 +62,20 @@ def random_weighted_choice(choices):
     x = random.random() * cumdist[-1]
     element = bisect.bisect(cumdist, x)
     return choices[element]
+
+def extract_words(lines):
+    """
+    Extract from the given iterable of lines the list of words.
+
+    :param lines: an iterable of lines;
+    :return: a generator of words of lines.
+    """
+    for line in lines:
+       for word in re.findall(r"\w+", line):
+           yield word
+
+class GenerationError(Exception):
+    """
+    A problem occurred during random word generation.
+    """
+    pass
