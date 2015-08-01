@@ -6,9 +6,9 @@ The word module generate, from a given table, a (set of) random words.
 
 import argparse
 import pickle
-from collections import defaultdict
 from wagoner.utils import *
-from wagoner.table import table
+from wagoner.table import Table
+
 
 def process_arguments():
     """
@@ -46,8 +46,8 @@ def process_arguments():
 
 if __name__ == "__main__":
     args = process_arguments()
-    t = pickle.load(args.table)
+    table = pickle.load(args.table)
     for _ in range(args.count):
-        print(t.random_word(args.length, prefix=args.prefix,
-                            start=args.start, end=args.end,
-                            flatten=args.flatten))
+        print(table.random_word(args.length, prefix=args.prefix,
+                                start=args.start, end=args.end,
+                                flatten=args.flatten))

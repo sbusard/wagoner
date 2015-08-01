@@ -9,12 +9,13 @@ words.
 import argparse
 import pickle
 from collections import defaultdict, Mapping
-import random # TODO Use cryptographic-friendly randomization
+import random  # TODO Use cryptographic-friendly randomization
 from wagoner.utils import *
 
-__all__ = ["table"]
+__all__ = ["Table"]
 
-class table(Mapping):
+
+class Table(Mapping):
     """
     A table is a mapping of strings to mapping of their successing characters,
     with the weight of the corresponding character. That is, given t a table,
@@ -44,22 +45,23 @@ class table(Mapping):
         :return: the corresponding table.
         
         Example:
-        >>> extract_table(['abaq'])
+        >>> Table.from_words(['abaq'])
         {'a':{'b': 1, 'q': 1}, 'ab': {'a': 1}, 'aba': {'q': 1}, 'b': {'a': 1},
          'ba': {'q': 1}}
         """
-        t = defaultdict(lambda: defaultdict(int))
+        table = defaultdict(lambda: defaultdict(int))
         for word in words:
             word = ">" + word + "<"
             for start in range(len(word) - 1):
-                maxend = len(word) - 1 if prefix <= 0 else start + prefix + 1
-                for end in range(start + 1, maxend + 1):
-                    subword = word[start:end]
-                    t[subword][word[end]] = (1 if flatten else
-                                             t[subword][word[end]] + 1)
-        for k,v in t.items():
-            t[k] = dict(v)
-        return cls(dict(t))
+                max_end = len(word) - 1 if prefix <= 0 else start + prefix + 1
+                for end in range(start + 1, max_end + 1):
+                    sub_word = word[start:end]
+                    table[sub_word][word[end]] = (1 if flatten else
+                                                  table[sub_word][word[end]] +
+                                                  1)
+        for k, v in table.items():
+            table[k] = dict(v)
+        return cls(dict(table))
 
     def __getitem__(self, key):
         return self.__content[key]
@@ -104,18 +106,18 @@ class table(Mapping):
         """
         exclude = exclude if exclude is not None else set()
         weighted_choices = defaultdict(int)
-        totalsum = 1
+        total_sum = 1
         for start in range(len(word) - 1, -1, -1):
-            currentsum = 0
-            subword = word[start:]
-            if subword in self:
-                for successor, weight in self[subword].items():
+            current_sum = 0
+            sub_word = word[start:]
+            if sub_word in self:
+                for successor, weight in self[sub_word].items():
                     if successor not in exclude:
                         weight = 1 if flatten else weight
-                        weight = weight * totalsum
+                        weight = weight * total_sum
                         weighted_choices[successor] += weight
-                        currentsum += weight
-            totalsum += currentsum
+                        current_sum += weight
+            total_sum += current_sum
         return weighted_choices
 
     def random_word(self, length, prefix=0, start=False, end=False,
@@ -148,7 +150,7 @@ class table(Mapping):
                 except GenerationError:
                     first_letters.remove(word[0])
 
-    def _extend_word(self, word, length, prefix=0,end=False, flatten=False):
+    def _extend_word(self, word, length, prefix=0, end=False, flatten=False):
         """
         Extend the given word with a random suffix up to length.
 
@@ -187,6 +189,7 @@ class table(Mapping):
                     exclude.add(character)
                     word = word[:-1]
 
+
 def process_arguments():
     """
     Process the command line arguments. The arguments are:
@@ -216,16 +219,18 @@ def process_arguments():
 
 if __name__ == "__main__":
     args = process_arguments()
+
     def all_words():
         for file in args.text:
             for word in extract_words(file):
                 yield word
 
-    t = table.from_words(all_words(), prefix=args.prefix, flatten=args.flatten)
-    if args.check and not t.check():
+    table = Table.from_words(all_words(), prefix=args.prefix,
+                             flatten=args.flatten)
+    if args.check and not table.check():
         print("[ERROR] The given set of texts yields an incomplete table.")
     else:
         if args.output:
-            pickle.dump(t, args.output)
+            pickle.dump(table, args.output)
         else:
-            print(t)
+            print(table)

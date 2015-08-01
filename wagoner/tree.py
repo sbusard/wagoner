@@ -8,12 +8,12 @@ import argparse
 import pickle
 from collections import defaultdict, Mapping
 from wagoner.utils import random_weighted_choice, nonzero_natural, natural
-from wagoner.word import weighted_choices
-from wagoner.table import table
+from wagoner.table import Table
 
-__all__ = ["tree"]
+__all__ = ["Tree"]
 
-class tree(Mapping):
+
+class Tree(Mapping):
     """
     A tree is a mapping of nodes to mappings of nodes to weights. Each node is
     a pair of string and length, meaning that if a word of length ends with the
@@ -48,7 +48,8 @@ class tree(Mapping):
         pending = {(">", 0)}  # The nodes to expand
         while pending:
             suffix, size = pending.pop()
-            choices = weighted_choices(suffix, table, flatten=flatten)
+            choices = table.weighted_choices(suffix, exclude={"<"},
+                                             flatten=flatten)
             if size < length:
                 # The word length is not reached yet, expand
                 for successor, weight in choices.items():
@@ -151,10 +152,10 @@ def process_arguments():
 
 if __name__ == "__main__":
     args = process_arguments()
-    ta = pickle.load(args.table)
-    te = tree.from_table(ta, args.length, prefix=args.prefix,
-                         flatten=args.flatten)
+    table = pickle.load(args.table)
+    tree = Tree.from_table(table, args.length, prefix=args.prefix,
+                           flatten=args.flatten)
     if args.output:
-        pickle.dump(te, args.output)
+        pickle.dump(tree, args.output)
     else:
-        print(te)
+        print(tree)

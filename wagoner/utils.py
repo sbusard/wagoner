@@ -4,24 +4,32 @@ A set of utility functions.
 
 import bisect
 import operator
-import random # TODO Use cryptographic-friendly randomization
+import random  # TODO Use cryptographic-friendly randomization
 import re
 
 __all__ = ["accumulate", "natural", "nonzero_natural",
            "random_weighted_choice", "extract_words", "GenerationError"]
 
+
 def accumulate(iterable, func=operator.add):
-    'Return running totals'
-    # Copied from
-    # https://docs.python.org/3/library/itertools.html#itertools.accumulate
-    # accumulate([1,2,3,4,5]) --> 1 3 6 10 15
-    # accumulate([1,2,3,4,5], operator.mul) --> 1 2 6 24 120
+    """
+    Return a generator of accumulated values of iterable.
+
+    :param iterable: the iterable of values;
+    :param func:  a function taking an accumulated value and a value of
+    iterable and returning the new accumulated value.
+    :return: a generator of accumulated values of iterable with func.
+
+    Copied from
+    https://docs.python.org/3/library/itertools.html#itertools.accumulate
+    """
     it = iter(iterable)
     total = next(it)
     yield total
     for element in it:
         total = func(total, element)
         yield total
+
 
 def natural(value):
     """
@@ -35,6 +43,7 @@ def natural(value):
     if integer < 0:
         raise ValueError("'%s' is not a positive integer" % value)
     return integer
+
 
 def nonzero_natural(value):
     """
@@ -63,6 +72,7 @@ def random_weighted_choice(choices):
     element = bisect.bisect(cumdist, x)
     return choices[element]
 
+
 def extract_words(lines):
     """
     Extract from the given iterable of lines the list of words.
@@ -71,8 +81,9 @@ def extract_words(lines):
     :return: a generator of words of lines.
     """
     for line in lines:
-       for word in re.findall(r"\w+", line):
-           yield word
+        for word in re.findall(r"\w+", line):
+            yield word
+
 
 class GenerationError(Exception):
     """
