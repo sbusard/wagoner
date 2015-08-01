@@ -7,7 +7,7 @@ The tree module extract, from a table, a tree limited to a given depth.
 import argparse
 import pickle
 from collections import defaultdict, Mapping
-from wagoner.utils import random_weighted_choice, nonzero_natural, natural
+from wagoner.utils import *
 from wagoner.table import Table
 
 __all__ = ["Tree"]
@@ -48,9 +48,9 @@ class Tree(Mapping):
         pending = {(">", 0)}  # The nodes to expand
         while pending:
             suffix, size = pending.pop()
-            choices = table.weighted_choices(suffix, exclude={"<"},
-                                             flatten=flatten)
             if size < length:
+                choices = table.weighted_choices(suffix, exclude={"<"},
+                                                 flatten=flatten)
                 # The word length is not reached yet, expand
                 for successor, weight in choices.items():
                     expanded = suffix + successor
@@ -60,6 +60,7 @@ class Tree(Mapping):
                     tree[(suffix, size)][new_node] = weight
                     pending.add(new_node)
             else:
+                choices = table.weighted_choices(suffix, flatten=flatten)
                 # The word length is reached, only add < if present
                 if "<" in choices:
                     tree[(suffix, size)][("<", size + 1)] = 1
@@ -104,6 +105,9 @@ class Tree(Mapping):
     def __len__(self):
         return len(self.__content)
 
+    def __str__(self):
+        return str(self.__content)
+
     def random_word(self):
         """
         Return a random word from this tree. The length of the word depends on
@@ -131,9 +135,14 @@ def process_arguments():
      * -f (or --flatten) if the table must be flattened before generation.
     """
     parser = argparse.ArgumentParser(description="Generate trees from "
-                                                 "the given table")
-    parser.add_argument("table", type=argparse.FileType('rb'),
-                        help="the table")
+                                                 "the given content",
+                                     epilog="This script can generate trees "
+                                            "from tables or texts; if a "
+                                            "text is given, "
+                                            "the corresponding table is "
+                                            "first built, then the tree is "
+                                            "built.")
+    parser.add_argument("content", help="the content (a table or a text)")
     parser.add_argument("--length", "-l", type=nonzero_natural, default=10,
                         dest="length", help="the length of words generable by "
                                             "the tree (default: 10)")
@@ -147,12 +156,18 @@ def process_arguments():
     parser.add_argument("--output", "-o", type=argparse.FileType('wb'),
                         default=None, dest="output",
                         help="the output destination; "
-                             "if missing, print the table")
+                             "if missing, print the tree")
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = process_arguments()
-    table = pickle.load(args.table)
+    try:
+        with open(args.content, "rb") as table_file:
+            table = pickle.load(table_file)
+    except pickle.UnpicklingError:
+        with open(args.content, "r") as text_file:
+            table = Table.from_words(extract_words(text_file),
+                                     prefix=args.prefix, flatten=args.flatten)
     tree = Tree.from_table(table, args.length, prefix=args.prefix,
                            flatten=args.flatten)
     if args.output:

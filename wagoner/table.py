@@ -10,6 +10,8 @@ import argparse
 import pickle
 from collections import defaultdict, Mapping
 import random  # TODO Use cryptographic-friendly randomization
+import sys
+
 from wagoner.utils import *
 
 __all__ = ["Table"]
@@ -53,12 +55,12 @@ class Table(Mapping):
         for word in words:
             word = ">" + word + "<"
             for start in range(len(word) - 1):
-                max_end = len(word) - 1 if prefix <= 0 else start + prefix + 1
+                max_end = ((len(word) - 1) if prefix <= 0
+                           else (min(start + prefix + 1, len(word) - 1)))
                 for end in range(start + 1, max_end + 1):
                     sub_word = word[start:end]
-                    table[sub_word][word[end]] = (1 if flatten else
-                                                  table[sub_word][word[end]] +
-                                                  1)
+                    weight = 1 if flatten else (table[sub_word][word[end]] + 1)
+                    table[sub_word][word[end]] = weight
         for k, v in table.items():
             table[k] = dict(v)
         return cls(dict(table))
@@ -71,6 +73,9 @@ class Table(Mapping):
 
     def __len__(self):
         return len(self.__content)
+
+    def __str__(self):
+        return str(self.__content)
 
     def check(self):
         """
@@ -198,8 +203,8 @@ def process_arguments():
      * -o (or --output) the output file (default: stdout).
     """
     parser = argparse.ArgumentParser(description="Extract a table from the "
-                                                 "given text(s)")
-    parser.add_argument("text", type=argparse.FileType('r'), nargs="+",
+                                                 "given text")
+    parser.add_argument("text", type=argparse.FileType('r'),
                         help="the text to analyse")
     parser.add_argument("--prefix", "-p", type=natural, default=0,
                         dest="prefix", help="if not 0, the maximum length of "
@@ -220,15 +225,11 @@ def process_arguments():
 if __name__ == "__main__":
     args = process_arguments()
 
-    def all_words():
-        for file in args.text:
-            for word in extract_words(file):
-                yield word
-
-    table = Table.from_words(all_words(), prefix=args.prefix,
+    table = Table.from_words(extract_words(args.text), prefix=args.prefix,
                              flatten=args.flatten)
     if args.check and not table.check():
-        print("[ERROR] The given set of texts yields an incomplete table.")
+        print("[ERROR] The given text yields an incomplete table.",
+              file=sys.stderr)
     else:
         if args.output:
             pickle.dump(table, args.output)

@@ -22,8 +22,8 @@ def process_arguments():
      * -f (or --flatten) if the table must be flattened before generation.
     """
     parser = argparse.ArgumentParser(description="Generate random words from "
-                                                 "the given table")
-    parser.add_argument("table", type=argparse.FileType('rb'),
+                                                 "the given content")
+    parser.add_argument("content", type=argparse.FileType('rb'),
                         help="the table")
     parser.add_argument("--length", "-l", type=nonzero_natural, default=10,
                         dest="length", help="the length of generated words "
@@ -46,7 +46,9 @@ def process_arguments():
 
 if __name__ == "__main__":
     args = process_arguments()
+    # TODO Support text, table or tree
     table = pickle.load(args.table)
+    # TODO Manage trees if needed
     for _ in range(args.count):
         print(table.random_word(args.length, prefix=args.prefix,
                                 start=args.start, end=args.end,
