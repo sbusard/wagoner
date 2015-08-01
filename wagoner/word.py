@@ -8,6 +8,7 @@ import argparse
 import pickle
 from wagoner.utils import *
 from wagoner.table import Table
+from wagoner.tree import Tree
 
 
 def process_arguments():
@@ -22,9 +23,20 @@ def process_arguments():
      * -f (or --flatten) if the table must be flattened before generation.
     """
     parser = argparse.ArgumentParser(description="Generate random words from "
-                                                 "the given content")
-    parser.add_argument("content", type=argparse.FileType('rb'),
-                        help="the table")
+                                                 "the given content",
+                                     epilog="This script can generate random"
+                                            "words from tables, trees or "
+                                            "texts. If a tree is given, "
+                                            "the length of the generated "
+                                            "words depend on the tree. If a "
+                                            "table is given, the table is "
+                                            "used to generate words, except "
+                                            "if --end option is given. If a "
+                                            "text is given, "
+                                            "the corresponding table is "
+                                            "built, and also the tree if "
+                                            "needed.")
+    parser.add_argument("content", help="the content")
     parser.add_argument("--length", "-l", type=nonzero_natural, default=10,
                         dest="length", help="the length of generated words "
                                             "(default: 10)")
@@ -46,10 +58,18 @@ def process_arguments():
 
 if __name__ == "__main__":
     args = process_arguments()
-    # TODO Support text, table or tree
-    table = pickle.load(args.table)
-    # TODO Manage trees if needed
+    try:
+        with open(args.content, "rb") as content_file:
+            content = pickle.load(content_file)
+    except pickle.UnpicklingError:
+        with open(args.content, "r") as text_file:
+            content = Table.from_words(extract_words(text_file),
+                                       prefix=args.prefix,
+                                       flatten=args.flatten)
+    if args.end and isinstance(content, Table):
+        content = Tree.from_table(content, args.length, prefix=args.prefix,
+                                  flatten=args.flatten)
     for _ in range(args.count):
-        print(table.random_word(args.length, prefix=args.prefix,
-                                start=args.start, end=args.end,
-                                flatten=args.flatten))
+        print(content.random_word(args.length, prefix=args.prefix,
+                                  start=args.start, end=args.end,
+                                  flatten=args.flatten))

@@ -145,7 +145,7 @@ class Table(Mapping):
             return self._extend_word(word, length, prefix=prefix, end=end,
                                      flatten=flatten)[1:]
         else:
-            first_letters = list(k for k in self if len(k) == 1)
+            first_letters = list(k for k in self if len(k) == 1 and k != ">")
             while True:
                 word = random.choice(first_letters)
                 try:

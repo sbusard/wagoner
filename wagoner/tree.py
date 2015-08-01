@@ -108,12 +108,14 @@ class Tree(Mapping):
     def __str__(self):
         return str(self.__content)
 
-    def random_word(self):
+    def random_word(self, *args, **kwargs):
         """
         Return a random word from this tree. The length of the word depends on
         the this tree.
 
         :return: a random word from this tree.
+
+        args and kwargs are ignored.
         """
         word = ""
         current = (">", 0)
