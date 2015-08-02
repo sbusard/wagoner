@@ -178,3 +178,55 @@ that outputs, for example::
     oxideodore
     wordshedro
 
+
+Library usage
+-------------
+
+``wagoner`` can also be used as a library. ``wagoner.table.Table`` represent
+tables and a table can be extracted from a text file with::
+
+    table = Table.from_words(wagoner.utils.extract_words(text_file))
+
+``Table.from_words`` accept two optional arguments:
+
+* ``prefix``: if greater than 0, the length of the prefixes to take into
+  account when generating the word (default is 0).
+* ``flatten``: if ``True``, the table is flattened and two successing
+  characters for the same prefix will have the same weight (default is
+  ``False``).
+
+From such a table, a random word can be extracted::
+
+    word = table.random_word(word_length)
+
+where ``word_length`` is the length of the desired word. ``random_word``
+accepts several optional arguments:
+
+* ``prefix`` and ``flatten``, as above.
+* ``start``: if ``True``, the generated word starts as a word of the text
+  the table is extracted from (default is ``False``).
+* ``end``: if ``True``, the generated word ends as a word of the text
+  the table is extracted from (default is ``False``).
+  Warning: this option should not be used because it is very time consuming.
+
+Furthermore, ``wagoner.tree.Tree`` represent trees and a tree can be
+extracted from a table with::
+
+    tree = Tree.from_table(table, word_length)
+
+where ``table`` is a table like the one above and ``word_length`` is the
+length of the words the tree will produce. Like ``Table.from_words``,
+``Tree.from_table`` supports two optional arguments: ``prefix`` and
+``flatten``. In this case, the ``prefix`` argument is very important
+because, if set to 0 (the default value), the tree can be really huge, even
+impossible to stay in memory, and will need a lot of time to be built.
+
+From such a te, a random word can be extracted::
+
+    word = tree.random_word()
+
+Unlike the tables, trees contain the complete information to extract words
+(their length, whether flattening the weights) and ``random_word`` takes no
+optional argument (technically, it accepts any arguments, but will ignore
+them).
+
