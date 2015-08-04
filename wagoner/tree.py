@@ -4,6 +4,7 @@
 The tree module extract, from a table, a tree limited to a given depth.
 """
 
+from __future__ import print_function
 import argparse
 import pickle
 from collections import defaultdict, Mapping

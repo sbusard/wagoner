@@ -6,6 +6,7 @@ a table. This table can then be used by the word module to generate random
 words.
 """
 
+from __future__ import print_function
 import argparse
 import pickle
 from collections import defaultdict, Mapping
