@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 with open("README.rst", "r") as readme:
     setup(
         name="wagoner",
-        version="1.0",
+        version="1.1",
         description="A random word generator.",
         long_description=readme.read(),
         url="https://github.com/sbusard/wagoner",

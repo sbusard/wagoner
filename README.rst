@@ -230,3 +230,8 @@ Unlike the tables, trees contain the complete information to extract words
 optional argument (technically, it accepts any arguments, but will ignore
 them).
 
+
+Changelog
+---------
+
+* 1.1: support for Python 2.7.
